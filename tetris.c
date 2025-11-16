@@ -1,3 +1,9 @@
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_keycode.h>
+#include <SDL2/SDL_rect.h>
+#include <SDL2/SDL_render.h>
+#include <SDL2/SDL_surface.h>
+#include <SDL2/SDL_timer.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -153,6 +159,14 @@ int main() {
   long long fallInterval = 500;
   Action action;
 
+  // setting up window
+  SDL_Init(SDL_INIT_VIDEO);
+  SDL_Window *window =
+      SDL_CreateWindow("anjuna's snake", SDL_WINDOWPOS_CENTERED,
+                       SDL_WINDOWPOS_CENTERED, 480, 620, 0);
+  SDL_Renderer *renderer =
+      SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+
   while (running) {
     if (!isTet) {
       tetromino = getNewTetromino();
@@ -165,45 +179,65 @@ int main() {
     }
 
     long long currentTime = now_ms();
+    printf("current time : %d\n", (currentTime - lastFall));
     if (currentTime - lastFall >= fallInterval) {
       if (canMoveDown(posx, posy, rotation, tetromino)) {
         posy++;
+        lastFall = currentTime;
         continue;
       } else {
         pasteTetromino(posx, posy, rotation, tetromino);
+        isTet = 0;
       }
     }
-
-    switch (action) {
-    case ACTION_NONE:
-      break;
-    case ACTION_MOVE_LEFT:
-      if (canMoveLeft(posx, posy, rotation, tetromino))
-        posx--;
-      break;
-    case ACTION_MOVE_RIGHT:
-      if (canMoveRight(posx, posy, rotation, tetromino))
-        posx++;
-      break;
-    case ACTION_ROTATE_CW:
-      if (canRotateCw(posx, posy, rotation, tetromino))
-        rotateCw(rotation);
-      break;
-    case ACTION_ROTATE_ACW:
-      if (canRotateAcw(posx, posy, rotation, tetromino))
-        rotateAcw(rotation);
-      break;
-    case ACTION_SOFT_DROP:
-      if (canMoveDown(posx, posy, rotation, tetromino))
-        posy++;
-      break;
-    case ACTION_HARD_DROP:
-      while (canMoveDown(posx, posy, rotation, tetromino))
-        posy++;
-      pasteTetromino(posx, posy, rotation, tetromino);
-      break;
-    }
-
+    //
+    // switch (action) {
+    // case ACTION_NONE:
+    //   break;
+    // case ACTION_MOVE_LEFT:
+    //   if (canMoveLeft(posx, posy, rotation, tetromino))
+    //     posx--;
+    //   break;
+    // case ACTION_MOVE_RIGHT:
+    //   if (canMoveRight(posx, posy, rotation, tetromino))
+    //     posx++;
+    //   break;
+    // case ACTION_ROTATE_CW:
+    //   if (canRotateCw(posx, posy, rotation, tetromino))
+    //     rotateCw(rotation);
+    //   break;
+    // case ACTION_ROTATE_ACW:
+    //   if (canRotateAcw(posx, posy, rotation, tetromino))
+    //     rotateAcw(rotation);
+    //   break;
+    // case ACTION_SOFT_DROP:
+    //   if (canMoveDown(posx, posy, rotation, tetromino))
+    //     posy++;
+    //   break;
+    // case ACTION_HARD_DROP:
+    //   while (canMoveDown(posx, posy, rotation, tetromino))
+    //     posy++;
+    //   pasteTetromino(posx, posy, rotation, tetromino);
+    //   break;
+    // }
     clearLines();
+
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
+    SDL_RenderClear(renderer);
+
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+    for (int i = 4; i < 24; i++) {
+      for (int j = 0; j < 10; j++) {
+        if (grid[i][j] != 0) {
+          SDL_Rect rect = {i * 20, j * 20, 20, 20};
+          SDL_RenderFillRect(renderer, &rect);
+        }
+      }
+    }
+    SDL_RenderPresent(renderer);
   }
+  // clearing things up
+  SDL_DestroyRenderer(renderer);
+  SDL_DestroyWindow(window);
+  SDL_Quit();
 }
