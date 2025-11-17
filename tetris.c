@@ -239,6 +239,16 @@ int main() {
       }
     }
 
+    for (int i = 0; i < 10; i++) {
+      for (int j = 4; j < 24; j++) {
+        if (grid[i][j] != 0) {
+          printf("[]");
+        } else {
+          printf("  ");
+        }
+      }
+    }
+
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
     for (int i = 0; i < 10; i++) {
       for (int j = 4; j < 24; j++) {
