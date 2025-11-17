@@ -18,7 +18,7 @@ typedef enum {
   ACTION_HARD_DROP,
 } Action;
 
-int grid[24][10];
+int grid[10][24];
 int tetrominoes[7][4][16] = {
     // ======== T PIECE ========
     {
@@ -75,7 +75,8 @@ int isCollide(int x, int y, int r, int tId) {
   for (int i = 0; i < 4; i++) {
     for (int j = 0; j < 4; j++) {
       if (tetrominoes[tId][r][tIndex] != 0) {
-        if (x < 0 || y < 0 || grid[x][y] != 0) {
+        if (x + i < 0 || y + j < 0 || x + i >= 10 || y + j >= 24 ||
+            grid[x + i][y + j] != 0) {
           return 1;
         }
       }
@@ -87,7 +88,7 @@ int isCollide(int x, int y, int r, int tId) {
 
 int rotateCw(int r) { return (r + 1) % 4; }
 
-int rotateAcw(int r) { return (r - 1) % 4; }
+int rotateAcw(int r) { return (r - 1 + 4) % 4; }
 
 int canRotateCw(int x, int y, int r, int tId) {
   return !isCollide(x, y, rotateCw(r), tId);
@@ -113,8 +114,8 @@ void pasteTetromino(int x, int y, int r, int tId) {
   int tIndex = 0;
   for (int i = 0; i < 4; i++) {
     for (int j = 0; j < 4; j++) {
-      if (i > 0 && j > 3 && i < 20 && j < 24) {
-        grid[i][j] = tetrominoes[tId][r][tIndex];
+      if (x + i > 0 && y + j > 0 && x + i < 10 && y + j < 24) {
+        grid[x + i][y + j] = tetrominoes[tId][r][tIndex];
         tIndex++;
       }
     }
@@ -127,7 +128,7 @@ int clearLines() {
   while (lineIndex >= 4) {
     int i;
     for (i = 0; i < 10; i++) {
-      if (grid[lineIndex][i] == 0)
+      if (grid[i][lineIndex] == 0)
         break;
     }
     if (i == 10)
@@ -150,14 +151,14 @@ int main() {
   int timeGap = 100;
   int isTet = 0;
 
-  int tetromino;
-  int rotation;
+  int tetromino = 0;
+  int rotation = 0;
   int posx = 0;
   int posy = 0;
 
-  long long lastFall;
+  long long lastFall = 0;
   long long fallInterval = 500;
-  Action action;
+  Action action = ACTION_NONE;
 
   // setting up window
   SDL_Init(SDL_INIT_VIDEO);
@@ -225,9 +226,22 @@ int main() {
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
     SDL_RenderClear(renderer);
 
+    SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255);
+    int tIndex = 0;
+    for (int i = 0; i < 4; i++) {
+      for (int j = 0; j < 4; j++) {
+        if (posx + i >= 0 && posy + j >= 0 && posx + i < 10 && posy + j < 24 &&
+            tetrominoes[tetromino][rotation][tIndex] != 0) {
+          SDL_Rect rect = {(posx + i) * 20, (posy + j) * 20, 20, 20};
+          SDL_RenderFillRect(renderer, &rect);
+        }
+        tIndex++;
+      }
+    }
+
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-    for (int i = 4; i < 24; i++) {
-      for (int j = 0; j < 10; j++) {
+    for (int i = 0; i < 10; i++) {
+      for (int j = 4; j < 24; j++) {
         if (grid[i][j] != 0) {
           SDL_Rect rect = {i * 20, j * 20, 20, 20};
           SDL_RenderFillRect(renderer, &rect);
