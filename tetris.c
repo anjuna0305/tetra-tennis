@@ -114,10 +114,11 @@ void pasteTetromino(int x, int y, int r, int tId) {
   int tIndex = 0;
   for (int i = 0; i < 4; i++) {
     for (int j = 0; j < 4; j++) {
-      if (x + i > 0 && y + j > 0 && x + i < 10 && y + j < 24) {
+      if (x + i >= 0 && y + j >= 0 && x + i < 10 && y + j < 24 &&
+          tetrominoes[tId][r][tIndex] != 0) {
         grid[x + i][y + j] = tetrominoes[tId][r][tIndex];
-        tIndex++;
       }
+      tIndex++;
     }
   }
 }
@@ -126,13 +127,19 @@ int clearLines() {
   int lineIndex = 24 - 1;
   int linesCleared = 0;
   while (lineIndex >= 4) {
-    int i;
+    int i = 0;
     for (i = 0; i < 10; i++) {
       if (grid[i][lineIndex] == 0)
         break;
     }
-    if (i == 10)
+    if (i == 10) {
       linesCleared++;
+      for (int m = lineIndex; m > 0; m--) {
+        for (int n = 0; n < 10; n++) {
+          grid[n][m] = grid[n][m - 1];
+        }
+      }
+    }
     lineIndex--;
   }
   return linesCleared;
@@ -164,7 +171,7 @@ int main() {
   SDL_Init(SDL_INIT_VIDEO);
   SDL_Window *window =
       SDL_CreateWindow("anjuna's snake", SDL_WINDOWPOS_CENTERED,
-                       SDL_WINDOWPOS_CENTERED, 480, 620, 0);
+                       SDL_WINDOWPOS_CENTERED, 200, 480, 0);
   SDL_Renderer *renderer =
       SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 
@@ -180,7 +187,6 @@ int main() {
     }
 
     long long currentTime = now_ms();
-    printf("current time : %d\n", (currentTime - lastFall));
     if (currentTime - lastFall >= fallInterval) {
       if (canMoveDown(posx, posy, rotation, tetromino)) {
         posy++;
@@ -191,36 +197,66 @@ int main() {
         isTet = 0;
       }
     }
-    //
-    // switch (action) {
-    // case ACTION_NONE:
-    //   break;
-    // case ACTION_MOVE_LEFT:
-    //   if (canMoveLeft(posx, posy, rotation, tetromino))
-    //     posx--;
-    //   break;
-    // case ACTION_MOVE_RIGHT:
-    //   if (canMoveRight(posx, posy, rotation, tetromino))
-    //     posx++;
-    //   break;
-    // case ACTION_ROTATE_CW:
-    //   if (canRotateCw(posx, posy, rotation, tetromino))
-    //     rotateCw(rotation);
-    //   break;
-    // case ACTION_ROTATE_ACW:
-    //   if (canRotateAcw(posx, posy, rotation, tetromino))
-    //     rotateAcw(rotation);
-    //   break;
-    // case ACTION_SOFT_DROP:
-    //   if (canMoveDown(posx, posy, rotation, tetromino))
-    //     posy++;
-    //   break;
-    // case ACTION_HARD_DROP:
-    //   while (canMoveDown(posx, posy, rotation, tetromino))
-    //     posy++;
-    //   pasteTetromino(posx, posy, rotation, tetromino);
-    //   break;
-    // }
+
+    action = ACTION_NONE;
+    SDL_Event event;
+    while (SDL_PollEvent(&event)) {
+      if (event.type == SDL_KEYDOWN) {
+        switch (event.key.keysym.sym) {
+        case SDLK_UP:
+          action = ACTION_ROTATE_CW;
+          break;
+
+        case SDLK_DOWN:
+          action = ACTION_SOFT_DROP;
+          break;
+
+        case SDLK_LEFT:
+          action = ACTION_MOVE_LEFT;
+          break;
+
+        case SDLK_RIGHT:
+          action = ACTION_MOVE_RIGHT;
+          break;
+
+        case SDLK_q:
+          action = ACTION_NONE;
+          running = 0;
+          break;
+        }
+      }
+    }
+
+    switch (action) {
+    case ACTION_NONE:
+      break;
+    case ACTION_MOVE_LEFT:
+      if (canMoveLeft(posx, posy, rotation, tetromino))
+        posx--;
+      break;
+    case ACTION_MOVE_RIGHT:
+      if (canMoveRight(posx, posy, rotation, tetromino))
+        posx++;
+      break;
+    case ACTION_ROTATE_CW:
+      if (canRotateCw(posx, posy, rotation, tetromino))
+        rotation = rotateCw(rotation);
+      break;
+    case ACTION_ROTATE_ACW:
+      if (canRotateAcw(posx, posy, rotation, tetromino))
+        rotation = rotateAcw(rotation);
+      break;
+    case ACTION_SOFT_DROP:
+      if (canMoveDown(posx, posy, rotation, tetromino))
+        posy++;
+      break;
+    case ACTION_HARD_DROP:
+      while (canMoveDown(posx, posy, rotation, tetromino))
+        posy++;
+      pasteTetromino(posx, posy, rotation, tetromino);
+      break;
+    }
+
     clearLines();
 
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
@@ -239,14 +275,16 @@ int main() {
       }
     }
 
-    for (int i = 0; i < 10; i++) {
-      for (int j = 4; j < 24; j++) {
+    printf("\n\x1b[25A");
+    for (int j = 4; j < 24; j++) {
+      for (int i = 0; i < 10; i++) {
         if (grid[i][j] != 0) {
           printf("[]");
         } else {
-          printf("  ");
+          printf("**");
         }
       }
+      printf("\n");
     }
 
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
